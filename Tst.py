@@ -83,3 +83,9 @@ print(d1)
 
 c = [3, 4, 5]
 print(c[-1])
+
+print(f'There are {torch.cuda.device_count()} GPU availabel in the computer !!!')
+
+dd1 = np.ones([3,4])
+
+print(dd1.reshape(1,-1).shape)

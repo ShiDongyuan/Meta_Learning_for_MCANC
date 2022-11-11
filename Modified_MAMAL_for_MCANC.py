@@ -1,4 +1,10 @@
-from torch import nn, randn, float32, zeros, einsum, roll, transpose
+#     __  __           _ _  __ _           _    __  __     _    __  __ _        __  __       _
+#    |  \/  | ___   __| (_)/ _(_) ___   __| |  |  \/  |   / \  |  \/  | |      |  \/  | ___ | |_  __ _
+#    | |\/| |/ _ \ / _` | | |_| |/ _ \ / _` |  | |\/| |  / _ \ | |\/| | |      | |\/| |/ _ \| __|/ _` |
+#    | |  | | (_) | (_| | |  _| |  __/| (_| |  | |  | | / ___ \| |  | | |___   | |  | |  __/| |_| (_| |
+#    |_|  |_|\___/ \__,_|_|_| |_|\___| \__,_|  |_|  |_|/_/   \_\_|  |_|_____|  |_|  |_|\___| \__|\__,_|
+
+from torch import nn, float32, zeros, einsum, roll, transpose
 from torch.autograd import Variable
 
 def bulidng_data_by_DelayLine(Len_c, Fx):
@@ -31,7 +37,7 @@ def bulidng_data_by_DelayLine(Len_c, Fx):
 
 class Modified_MAML(nn.Module):
     
-    def __init__(self, num_ref, num_sec, Len_c, L_r, Gamma):
+    def __init__(self, num_ref, num_sec, Len_c, L_r, Gamma, device='cpu'):
         """ The modified MAML meta learning algorithm for MCANC system (R x S x E). The MCANC system has R references, S secondary sources, and E error sensors. 
 
         Args:
@@ -40,11 +46,13 @@ class Modified_MAML(nn.Module):
             Len_c (_int_): The length of the control filter.
             L_r (_float_): The learning rate for the first gradient descent algorithm.
             Gamma (_float_): The forgeting facotr that is used avoid the zeor-padding effect in the delay-line.
+            device (_str__): Using 'GPU' or 'cpu' for trainning. 
         """
         super().__init__()
         self.initial_weigths = nn.Parameter(zeros(size=(num_ref,num_sec, Len_c), dtype=float32))
         self.Lenc            = Len_c
         self.lr              = L_r
+        self.device          = device
         self.gamma           = Gamma 
         self.Gam_vector      = self.Construct_Gamma_vector()
     
@@ -53,10 +61,10 @@ class Modified_MAML(nn.Module):
         for i in range(self.Lenc):
             Gam_vector[i] = self.gamma**(self.Lenc-1-i)
         
-        return Gam_vector
+        return Gam_vector.to(self.device)
     
     def First_grad(self, initial_weigths, Fx, Dis):
-        weights_A      = Variable(initial_weigths.detach(), requires_grad=True)
+        weights_A      = Variable(initial_weigths.detach(), requires_grad=True).to(self.device)
         anti_noise_ele = einsum('rsen, rsn->rse', Fx, weights_A)
         anti_noise     = einsum('rse->e', anti_noise_ele)
         error          = Dis[:,-1]-anti_noise
