@@ -89,3 +89,11 @@ print(f'There are {torch.cuda.device_count()} GPU availabel in the computer !!!'
 dd1 = np.ones([3,4])
 
 print(dd1.reshape(1,-1).shape)
+
+tinydict = {'a': 1, 'b': 2, 'c': 3, 'd':4}
+
+keys = list(tinydict.keys())
+print(list(tinydict.keys()))
+# print(tinydict.values().shape)
+
+print(3/2)

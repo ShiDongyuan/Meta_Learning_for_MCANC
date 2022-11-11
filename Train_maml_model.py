@@ -89,7 +89,7 @@ if __name__ == "__main__":
     
     path_root = 'pth_modle'
     pth_file  = 'MAML_v1.pth'
-    save_training_mode_to_workspace(path_root, pth_file, Meta_model.cpu().state_dict)
+    save_training_mode_to_workspace(path_root, pth_file, Meta_model.state_dict())
 
         
         

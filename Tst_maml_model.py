@@ -42,6 +42,7 @@ for i in Meta_model.parameters():
     
 model_dict = Meta_model.state_dict()
 
+
 for k, v in model_dict.items():                                   
        print(k)
        print(v.shape)
