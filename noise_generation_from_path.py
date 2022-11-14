@@ -43,7 +43,7 @@ def generate_disturbance_filter_x_noises( primary_noise, T=2, fs=16000):
             for m in range(num_err):
                 filterd_ref[i,j,m,:] = signal.lfilter(secondary_paths[j,m,:],1,primary_noise)
     
-    Dis_Fx_dic={'Disturbances' : disturbances, 'Filtered_reference' : filterd_ref}
+    Dis_Fx_dic={'Disturbances' : disturbances, 'Filtered_reference' : filterd_ref, 'Primary_noise': primary_noise}
     
     return Dis_Fx_dic
 
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     for i in range(len(primary_noises)):
         d_fx_dic  = generate_disturbance_filter_x_noises(primary_noises[i,:], T, fs)
         file_name = f'board_noise_{primary_noise_cut_fre[i][0]}-{primary_noise_cut_fre[i][1]}.mat'
-        save_file_in_workspace(Folder='raw_noise_data',data_dic=d_fx_dic,file_name=file_name)
+        save_file_in_workspace(Folder='raw_noise_data_tst',data_dic=d_fx_dic,file_name=file_name)
         print(f"{i}.===>Complished " + file_name + "<===")
     
 

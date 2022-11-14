@@ -5,14 +5,20 @@ import scipy.signal as signal
 import matplotlib.pyplot as plt
 
 def frequency_response_depict(Wc):
+    fig, axs = plt.subplots(2)
     w, h = signal.freqz(Wc, 1, fs=16000)
-    plt.title('Digital filter frequency response')
-    plt.plot(w, 20*np.log10(np.abs(h)))
-    plt.title('Digital filter frequency response')
-    plt.ylabel('Amplitude Response [dB]')
-    plt.xlabel('Frequency (rad/sample)')
-    plt.grid()
+    axs[0].set_title('Impulse response')
+    axs[0].plot(Wc)
+    axs[0].set_xlabel('Taps')
+    axs[0].grid()
+    axs[1].set_title('Digital filter frequency response')
+    axs[1].plot(w, 20*np.log10(np.abs(h)))
+    axs[1].set_title('Digital filter frequency response')
+    axs[1].set_ylabel('Amplitude Response [dB]')
+    axs[1].set_xlabel('Frequency (Hz)')
+    axs[1].grid()
     plt.show()
+
 
 if __name__=="__main__":
     path_root = 'pth_modle'
