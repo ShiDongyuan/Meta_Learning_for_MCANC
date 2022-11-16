@@ -3,6 +3,7 @@ import torch
 import numpy as np
 import scipy.signal as signal
 import matplotlib.pyplot as plt
+from scipy.io import loadmat, savemat
 
 def frequency_response_depict(Wc):
     fig, axs = plt.subplots(2)
@@ -34,4 +35,26 @@ if __name__=="__main__":
     
     # for k, v in model_dict.items(): 
     #     print(k)
+    frequency_response_depict(Wc)
+    
+    # path_root = 'pth_modle'
+    # pth_file  = 'Reptile_v1.pth'
+
+    # model_file = os.path.join(path_root, pth_file)
+    
+    # model_dict = torch.load(model_file)
+    
+    # print(model_dict['Control_filter'].shape)
+    
+    # Wc = model_dict['Control_filter'][0,0,:]
+    
+    # for k, v in model_dict.items(): 
+    #     print(k)
+    
+    path_root = 'pth_modle'
+    mat_file  = 'reptile_control_v3.mat'
+    model_file = os.path.join(path_root, mat_file)
+    model_dict = loadmat(model_file)
+    Wc = model_dict['Control filter'][0,0,:]
+    
     frequency_response_depict(Wc)

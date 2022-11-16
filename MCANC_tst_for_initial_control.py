@@ -28,26 +28,39 @@ def load_intitial_control_filter(path_root, pth_file):
     
     return Wc 
 
-def plot_error_disturbance(disturbacne, error, error_v1, Wc_ini, Wo):
-    fig, axs = plt.subplots(3)
-    axs[0].plot(range(len(disturbacne)),disturbacne,label='ANC off') 
-    axs[0].plot(range(len(error_v1)),error_v1, label='ANC on')
+def plot_error_disturbance(disturbacne, error, error_v1, error_v2, Wc_ini, Wo, Wr):
+    fs = 16000
+    fig, axs = plt.subplots(4)
+    axs[0].plot(np.arange(len(disturbacne))/fs,disturbacne,label='ANC off') 
+    axs[0].plot(np.arange(len(error_v1))/fs,error_v1, label='ANC on')
     axs[0].grid()
-    axs[0].set_title('With the zero intialization')
+    axs[0].set_title('McFxLMS with the zero intialization')
+    axs[0].set_ylabel('Error signal')
+    axs[0].set_xlabel('Times (seconds)')
     axs[0].legend()
-    axs[1].plot(range(len(disturbacne)),disturbacne,range(len(error)),error)
+    axs[1].plot(np.arange(len(disturbacne))/fs,disturbacne,np.arange(len(error))/fs,error)
     axs[1].grid()
-    axs[1].set_title('With the Meta intialization')
+    axs[1].set_title('McFxLMS with the MAML-Meta intialization')
+    axs[1].set_ylabel('Error signal')
+    axs[1].set_xlabel('Times (seconds)')
+
+    axs[2].plot(np.arange(len(disturbacne))/fs,disturbacne,np.arange(len(error_v2))/fs,error_v2)
+    axs[2].grid()
+    axs[2].set_title('McFxLMS with the MCMC-Grediant-Meta intialization')
+    axs[2].set_ylabel('Error signal')
+    axs[2].set_xlabel('Times (seconds)')
     
     w, h  = signal.freqz(Wc_ini, 1, fs=16000)
     _, h1 = signal.freqz(Wo, 1, fs=16000)
-    axs[2].plot(w, 20*np.log10(np.abs(h)), label = 'Metal Intial control filter' )
-    axs[2].plot(w, 20*np.log10(np.abs(h1)), label = 'Optimal control filter' )
-    axs[2].set_title('Digital filter frequency response')
-    axs[2].set_ylabel('Amplitude Response [dB]')
-    axs[2].set_xlabel('Frequency (Hz)')
-    axs[2].legend()
-    axs[2].grid()
+    _, h2 = signal.freqz(Wr, 1, fs=16000)
+    axs[3].plot(w, 20*np.log10(np.abs(h)),  label = 'MAML-Meta initial control filter')
+    axs[3].plot(w, 20*np.log10(np.abs(h1)), label = 'Optimal control filter'     )
+    axs[3].plot(w, 20*np.log10(np.abs(h2)), label = 'MCMC-Grediant-Meta initial control filter' )
+    axs[3].set_title('Filter frequency response')
+    axs[3].set_ylabel('Amplitude Response [dB]')
+    axs[3].set_xlabel('Frequency (Hz)')
+    axs[3].legend()
+    axs[3].grid()
     plt.show()
 
 if __name__=="__main__":
@@ -62,6 +75,10 @@ if __name__=="__main__":
     
     # print(Ref.shape)
     # plt.plot(range(len(Dis[0,:])),Dis[0,:])
+
+    # Determining the processors 
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    print(f'inf 1: Using the {device} for the model trainning!')
     
     # Loading the primary and the secondary paths
     primary_paths, secondary_paths = load_path_from_workspace(Folder='Path_data', file_name='path_matrix.mat')
@@ -73,20 +90,36 @@ if __name__=="__main__":
     Wc_ini    = load_intitial_control_filter(path_root=path_root, pth_file=pth_file)
     
     # Creating the instance of McFxLMS
-    McFxLMS_model = McFxLMS_algorithm(Wc_initialization=Wc_ini, Sec=secon, device='cpu')
+    McFxLMS_model = McFxLMS_algorithm(Wc_initialization=Wc_ini, Sec=secon, device=device)
     
-    erro_vctor   = train_fxmclms_algorithm(Model=McFxLMS_model, Ref=Ref, Disturbance=Dis_tensor, device='cpu', Stepsize = 0.0000005, so = None)
+    erro_vctor   = train_fxmclms_algorithm(Model=McFxLMS_model, Ref=Ref, Disturbance=Dis_tensor, device=device, Stepsize = 0.0000005, so = None)
     error_signal = np.array(erro_vctor)
     
     # Creating the instance of McFxLMS with zero intialization 
-    McFxLMS_algorithm_v1 = McFxLMS_algorithm(Wc_initialization=torch.zeros_like(Wc_ini), Sec=secon, device='cpu')
+    McFxLMS_algorithm_v1 = McFxLMS_algorithm(Wc_initialization=torch.zeros_like(Wc_ini), Sec=secon, device=device)
     
-    erro_vctor      = train_fxmclms_algorithm(McFxLMS_algorithm_v1, Ref=Ref, Disturbance=Dis_tensor, device='cpu', Stepsize = 0.0000005, so = None)
+    erro_vctor      = train_fxmclms_algorithm(McFxLMS_algorithm_v1, Ref=Ref, Disturbance=Dis_tensor, device=device, Stepsize = 0.0000005, so = None)
     error_signal_v1 = np.array(erro_vctor)
     
     Wo = McFxLMS_algorithm_v1._get_coeff_()
     
-    plot_error_disturbance(Dis[0,:], error_signal[:,0], error_signal_v1[:,0], Wc_ini[0,0,:], Wo[0,0,:])
+    # Loading the intial from MCMC 
+    path_root  = 'pth_modle'
+    mat_file   = 'reptile_control_v3.mat'
+    
+    model_file = os.path.join(path_root, mat_file)
+    model_dict = loadmat(model_file)
+    Wc         = model_dict['Control filter']
+
+    # Creating the instance of McFxLMS with zero intialization 
+    McFxLMS_algorithm_v2 = McFxLMS_algorithm(Wc_initialization=torch.tensor(Wc), Sec=secon, device=device)
+    
+    erro_vctor      = train_fxmclms_algorithm(McFxLMS_algorithm_v2, Ref=Ref, Disturbance=Dis_tensor, device=device, Stepsize = 0.0000005, so = None)
+    error_signal_v2 = np.array(erro_vctor)
+    
+    Wr = McFxLMS_algorithm_v2._get_coeff_()
+
+    plot_error_disturbance(Dis[0,:], error_signal[:,0], error_signal_v1[:,0], error_signal_v2[:,0], Wc_ini[0,0,:], Wo[0,0,:], Wr[0,0,:])
 
 
     

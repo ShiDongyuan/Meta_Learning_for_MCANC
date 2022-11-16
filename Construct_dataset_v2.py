@@ -84,14 +84,14 @@ def building_data_set(Num_data, Len_c, Dis, Fx):
         file_name         = f'{i}.mat'
         file_name_list.append(file_name)
         type_name_list.append(keys[noise_track_index])
-        save_file_in_workspace(Folder='noise_dataset', data_dic=noise_dict, file_name=file_name)
+        save_file_in_workspace(Folder='noise_dataset_1024', data_dic=noise_dict, file_name=file_name)
         bar.update(i)
     name_dict   = {'file_name':file_name_list, 'Type_noise':type_name_list}  
-    save_csv_in_workspace(Folder='noise_dataset', name_dic=name_dict, index_file_name='index.csv')   
+    save_csv_in_workspace(Folder='noise_dataset_1024', name_dic=name_dict, index_file_name='index.csv')   
     bar.finish()
 
 if __name__ == "__main__": 
     Dis, Fx  = load_raw_noise_from_workspace()
     Num_data = 10000 
-    Len_c    = 512
+    Len_c    = 512*2
     building_data_set(Num_data, Len_c, Dis, Fx)

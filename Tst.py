@@ -101,3 +101,11 @@ print(3/2)
 a1 = torch.tensor([2,3,4,5])
 c1=torch.tensor(a1.detach(), dtype=torch.float32)
 print(c1.type())
+
+b1 = torch.zeros([2,4])
+b1[0] = a1 
+
+print(torch.flip(b1, [0,1]))
+
+fs = 16000 
+print(np.arange(5)/fs)
