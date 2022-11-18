@@ -67,7 +67,7 @@ if __name__=="__main__":
     Len_c              = 512 
     Wc_ini             = torch.zeros((4, 4, Len_c), dtype=torch.float32)
     
-    niteration         = 512 
+    niteration         = 25 
     alpha              = 0.0000003
     
     # Filtering 

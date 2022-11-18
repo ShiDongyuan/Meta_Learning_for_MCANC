@@ -81,7 +81,8 @@ def Train_Reptile_one_iteration(Model, criterion, optimizer, Data_loder, Wc_ini,
         t += 1
         
         state_dict = deepcopy(Model.state_dict())
-        Wc_ini     = Wc_ini + Lr*(state_dict['Control_filter'] - Wc_ini)
+        # Wc_ini     = Wc_ini + Lr*(state_dict['Control_filter'] - Wc_ini)
+        Wc_ini     = state_dict['Control_filter']
         # print(f'Debug 5: Wc_ini is {Wc_ini}')
     return loss_vector
 
@@ -96,10 +97,10 @@ if __name__ == "__main__":
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     print(f'inf 1: Using the {device} for the model trainning!')
 
-    Meta_model   = Reptile_Meta(num_ref=4, num_sec=4, Len_c=512, Gamma=0.9, device=device).to(device)
+    Meta_model   = Reptile_Meta(num_ref=4, num_sec=4, Len_c=512, Gamma=0.99, device=device).to(device)
 
     criterion = LossFunction_reptile
-    optimizer = torch.optim.SGD(Meta_model.parameters(), lr=1e-7)
+    optimizer = torch.optim.SGD(Meta_model.parameters(), lr=3e-7)
 
     writer = SummaryWriter('fashion_mnist_experiment_1')
     

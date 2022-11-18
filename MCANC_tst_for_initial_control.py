@@ -28,6 +28,13 @@ def load_intitial_control_filter(path_root, pth_file):
     
     return Wc 
 
+def load_intitial_control_filter_v1(path_root, pth_file):
+    model_file = os.path.join(path_root, pth_file)
+    model_dict = torch.load(model_file)
+    Wc         = model_dict['Control_filter']
+    
+    return Wc 
+
 def plot_error_disturbance(disturbacne, error, error_v1, error_v2, Wc_ini, Wo, Wr):
     fs = 16000
     fig, axs = plt.subplots(4)
@@ -46,7 +53,7 @@ def plot_error_disturbance(disturbacne, error, error_v1, error_v2, Wc_ini, Wo, W
 
     axs[2].plot(np.arange(len(disturbacne))/fs,disturbacne,np.arange(len(error_v2))/fs,error_v2)
     axs[2].grid()
-    axs[2].set_title('McFxLMS with the MCMC-Grediant-Meta intialization')
+    axs[2].set_title('McFxLMS with the Monte-Carlo Markov-chain Grediant Meta intialization')
     axs[2].set_ylabel('Error signal')
     axs[2].set_xlabel('Times (seconds)')
     
@@ -63,8 +70,19 @@ def plot_error_disturbance(disturbacne, error, error_v1, error_v2, Wc_ini, Wo, W
     axs[3].grid()
     plt.show()
 
+def Compare_convergences_of_different_initialization(err_v1, label_v1, err_v2, label_v2, fs):
+    index = np.arange(len(err_v1))/fs
+    plt.plot(index, err_v1, label = label_v1)
+    plt.plot(index, err_v2, label = label_v2)
+    plt.ylabel('Error signal')
+    plt.xlabel('Times (seconds)')
+    plt.legend()
+    plt.grid()
+    plt.show()
+
 if __name__=="__main__":
     
+
     # Loading the primary nosie and disturbance 
     Folder     = 'raw_noise_data_tst'
     noise_file = 'board_noise_980-2500.mat'
@@ -84,6 +102,7 @@ if __name__=="__main__":
     primary_paths, secondary_paths = load_path_from_workspace(Folder='Path_data', file_name='path_matrix.mat')
     secon                          = torch.tensor(secondary_paths, dtype=torch.float)
     
+    #Exp--1---
     # Loading the initialization of the control filter 
     path_root = 'pth_modle'
     pth_file  = 'MAML_v1.pth'
@@ -95,6 +114,7 @@ if __name__=="__main__":
     erro_vctor   = train_fxmclms_algorithm(Model=McFxLMS_model, Ref=Ref, Disturbance=Dis_tensor, device=device, Stepsize = 0.0000005, so = None)
     error_signal = np.array(erro_vctor)
     
+     #Exp--2---
     # Creating the instance of McFxLMS with zero intialization 
     McFxLMS_algorithm_v1 = McFxLMS_algorithm(Wc_initialization=torch.zeros_like(Wc_ini), Sec=secon, device=device)
     
@@ -103,23 +123,35 @@ if __name__=="__main__":
     
     Wo = McFxLMS_algorithm_v1._get_coeff_()
     
-    # Loading the intial from MCMC 
-    path_root  = 'pth_modle'
-    mat_file   = 'reptile_control_v3.mat'
+    # #Exp--3---
+    # # Loading the intial from MCMC 
+    # path_root  = 'pth_modle'
+    # mat_file   = 'reptile_control.mat'
     
-    model_file = os.path.join(path_root, mat_file)
-    model_dict = loadmat(model_file)
-    Wc         = model_dict['Control filter']
+    # model_file = os.path.join(path_root, mat_file)
+    # model_dict = loadmat(model_file)
+    # Wc         = model_dict['Control filter']
 
-    # Creating the instance of McFxLMS with zero intialization 
-    McFxLMS_algorithm_v2 = McFxLMS_algorithm(Wc_initialization=torch.tensor(Wc), Sec=secon, device=device)
+    # # Creating the instance of McFxLMS with zero intialization 
+    # McFxLMS_algorithm_v2 = McFxLMS_algorithm(Wc_initialization=torch.tensor(Wc), Sec=secon, device=device)
     
-    erro_vctor      = train_fxmclms_algorithm(McFxLMS_algorithm_v2, Ref=Ref, Disturbance=Dis_tensor, device=device, Stepsize = 0.0000005, so = None)
-    error_signal_v2 = np.array(erro_vctor)
+    # erro_vctor      = train_fxmclms_algorithm(McFxLMS_algorithm_v2, Ref=Ref, Disturbance=Dis_tensor, device=device, Stepsize = 0.0000005, so = None)
+    # error_signal_v2 = np.array(erro_vctor)
     
-    Wr = McFxLMS_algorithm_v2._get_coeff_()
+    # Wr = McFxLMS_algorithm_v2._get_coeff_()
+    
+    #Exp--4---
+    path_root = 'pth_modle'
+    pth_file  = 'Reptile_v1.pth'
+    Wc_ini_4    = load_intitial_control_filter_v1(path_root=path_root, pth_file=pth_file)
+    
+    # Creating the instance of McFxLMS
+    McFxLMS_model_v4 = McFxLMS_algorithm(Wc_initialization=Wc_ini_4, Sec=secon, device=device)
+    
+    erro_vctor      = train_fxmclms_algorithm(Model=McFxLMS_model_v4, Ref=Ref, Disturbance=Dis_tensor, device=device, Stepsize = 0.0000005, so = None)
+    error_signal_v4 = np.array(erro_vctor)
 
-    plot_error_disturbance(Dis[0,:], error_signal[:,0], error_signal_v1[:,0], error_signal_v2[:,0], Wc_ini[0,0,:], Wo[0,0,:], Wr[0,0,:])
+    plot_error_disturbance(Dis[0,:], error_signal[:,0], error_signal_v1[:,0], error_signal_v4[:,0], Wc_ini[0,0,:], Wo[0,0,:], Wc_ini_4[0,0,:])
 
-
+    Compare_convergences_of_different_initialization(err_v1=error_signal_v1[:,0], label_v1='MAML-Meta initial control filter', err_v2=error_signal_v4[:,0], label_v2='MCMC-Grediant-Meta initial control filter', fs=16000)
     
